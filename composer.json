@@ -3,7 +3,7 @@
     "description": "Official PHP SDK for RenderingVideo API - Video rendering and generation service",
     "keywords": ["renderingvideo", "video", "rendering", "sdk", "api","json-to-video"],
     "type": "library",
-    "version": "1.0.0.2",
+    "version": "1.0.2",
     "license": "MIT",
     "authors": [
         {

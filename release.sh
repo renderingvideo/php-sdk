@@ -9,13 +9,13 @@ VERSION=$1
 
 if [ -z "$VERSION" ]; then
     echo "Usage: ./release.sh <version>"
-    echo "Example: ./release.sh 1.0.0.2"
+    echo "Example: ./release.sh 1.0.2"
     exit 1
 fi
 
 # Validate version format
-if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(\.[0-9]+)?$ ]]; then
-    echo "Error: Version must be in format x.y.z or x.y.z.n (e.g., 1.0.0.2)"
+if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+    echo "Error: Version must be in format x.y.z (e.g., 1.0.2)"
     exit 1
 fi
 
