@@ -116,7 +116,7 @@ class Client
      */
     public function post(string $uri, array $data = []): array
     {
-        return $this->request('POST', $uri, ['json' => $data]);
+        return $this->request('POST', $uri, ['json' => $data === [] ? (object) [] : $data]);
     }
 
     /**

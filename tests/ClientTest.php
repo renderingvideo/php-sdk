@@ -10,6 +10,40 @@ use RenderingVideo\SDK\Exceptions\AuthenticationException;
 
 class ClientTest extends TestCase
 {
+    public function testPostEncodesEmptyPayloadAsJsonObject(): void
+    {
+        $httpClient = new class {
+            public array $lastCall = [];
+
+            public function request(string $method, string $uri, array $options = []): object
+            {
+                $this->lastCall = [
+                    'method' => $method,
+                    'uri' => $uri,
+                    'options' => $options,
+                ];
+
+                return new class {
+                    public function getBody(): object
+                    {
+                        return new class {
+                            public function getContents(): string
+                            {
+                                return '{"success":true}';
+                            }
+                        };
+                    }
+                };
+            }
+        };
+
+        $client = new Client('sk-test-key', ['http_client' => $httpClient]);
+        $client->post('/api/v1/test', []);
+
+        $this->assertIsObject($httpClient->lastCall['options']['json']);
+        $this->assertSame([], (array) $httpClient->lastCall['options']['json']);
+    }
+
     public function testConstructorWithValidApiKey(): void
     {
         $client = new Client('sk-test-key');

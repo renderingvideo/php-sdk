@@ -32,7 +32,7 @@ class FileResource extends Resource
         } else {
             foreach ($files as $file) {
                 $multipart[] = [
-                    'name' => 'files[]',
+                    'name' => 'files',
                     'contents' => fopen($file, 'r'),
                     'filename' => basename($file),
                 ];

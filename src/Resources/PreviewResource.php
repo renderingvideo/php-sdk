@@ -15,12 +15,12 @@ class PreviewResource extends Resource
     /**
      * Create a temporary preview link
      *
-     * @param array $config Video configuration
+     * @param array $config Full video schema sent directly as the request body
      * @return PreviewTask
      */
     public function create(array $config): PreviewTask
     {
-        $response = $this->client->post('/api/v1/preview', ['config' => $config]);
+        $response = $this->client->post('/api/v1/preview', $config);
 
         return PreviewTask::fromArray($response);
     }

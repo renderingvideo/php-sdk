@@ -118,10 +118,11 @@ echo $renderResult->remainingCredits; // 970
 
 ```php
 // Blocking call that polls until completion
-$task = $client->video->waitForCompletion('abc123def456', [
-    'timeout' => 300,   // Max wait time in seconds
-    'interval' => 5,    // Polling interval in seconds
-]);
+$task = $client->video->waitForCompletion(
+    'abc123def456',
+    timeout: 300,   // Max wait time in seconds
+    interval: 5,    // Polling interval in seconds
+);
 
 if ($task->isCompleted()) {
     echo "Video ready: " . $task->videoUrl;
