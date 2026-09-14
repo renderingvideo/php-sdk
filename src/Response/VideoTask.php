@@ -27,6 +27,8 @@ class VideoTask
         public readonly array $metadata = [],
         public readonly bool $success = true,
         public readonly ?string $message = null,
+        public readonly ?string $title = null,
+        public readonly ?string $category = null,
     ) {}
 
     /**
@@ -36,6 +38,8 @@ class VideoTask
     {
         return new self(
             taskId: $data['taskId'] ?? '',
+            title: $data['title'] ?? null,
+            category: $data['category'] ?? null,
             videoTaskId: $data['videoTaskId'] ?? '',
             width: $data['width'] ?? 0,
             height: $data['height'] ?? 0,
@@ -94,6 +98,8 @@ class VideoTask
     {
         return [
             'taskId' => $this->taskId,
+            'title' => $this->title,
+            'category' => $this->category,
             'videoTaskId' => $this->videoTaskId,
             'width' => $this->width,
             'height' => $this->height,

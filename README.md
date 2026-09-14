@@ -2,9 +2,47 @@
 
 Official PHP SDK for the [RenderingVideo](https://renderingvideo.com) API - a powerful video rendering and generation service.
 
+
+## API and Agent Access in 1.1
+
+Requires PHP 8.1+ (the SDK response models use readonly properties). Agent authentication additionally uses `ext-sodium`.
+
+```php
+use RenderingVideo\SDK\AgentAuth;
+use RenderingVideo\SDK\Client;
+
+// Generate once with AgentAuth::generateDevice(), persist securely, then reuse it.
+$device = json_decode(file_get_contents(getenv('RENDERINGVIDEO_DEVICE_FILE')), true);
+$auth = new AgentAuth(getenv('RENDERINGVIDEO_AGENT_KEY'), $device);
+$client = new Client('', ['agent_auth' => $auth]);
+$context = $client->agent->context();
+$audit = $client->agent->audit(['pageSize' => 20]);
+$capabilities = $client->getCapabilities();
+```
+
+Ordinary `new Client('sk-...')` remains supported. AgentAuth exchanges and refreshes short-lived tokens and signs each request. Reuse the same device identity and protect its private key. A custom HTTPS or localhost origin can be passed as AgentAuth's third argument.
+
+```php
+$task = $client->video->create($config, ['campaign' => 'launch'], ['title' => 'Launch', 'category' => 'marketing']);
+$tasks = $client->video->list(['category' => 'all']);
+$client->preview->convert($tempId, ['metadata' => ['campaign' => 'launch']]);
+$client->preview->render($tempId, ['metadata' => ['campaign' => 'launch'], 'num_workers' => 2]);
+```
+
+Schema arrays preserve grouped assets, gradients, nested layouts and advanced clip fields. See [enhanced-schema.json](examples/enhanced-schema.json).
+
+Context and capability discovery require `system:read`. Audit reads this key's events with `audit:read`; `allKeys=true` needs `audit:read:all`. Device proofs cover the credential hash, method, exact path/query, timestamp and nonce; HTTPS protects the body. Blocked devices and revoked credentials are rejected. SDKs do not automatically replay mutating requests after ambiguous failures; `invalidate()` explicitly discards a cached token.
+
+Task listing still defaults to category `api`; `category=all` includes tasks created through the website. Render quality is derived from schema dimensions, not a `quality` request option. Capability/category additions require the matching website API deployment. API keys and existing endpoints continue working on older deployments; capability discovery may return 404 there.
+
+[API reference](https://renderingvideo.com/docs/api-reference.md) · [Agent Access protocol](https://renderingvideo.com/docs/agent-access.md)
+
+Cross-language integration: in the website checkout, run `RENDERINGVIDEO_SDK_ROOT=/absolute/path/to/renderingvideo-clients pnpm exec tsx --test scripts/sdk-contract.test.ts` after building Node and installing the Python/PHP test dependencies. It runs local HTTP fixtures and validates SDK signatures with the application's verifier, without contacting production.
+
+
 ## Requirements
 
-- PHP 8.0 or higher
+- PHP 8.1 or higher
 - Composer
 
 ## Installation

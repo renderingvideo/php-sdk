@@ -20,9 +20,12 @@ class VideoResource extends Resource
      * @param array $metadata Optional custom metadata
      * @return VideoTask
      */
-    public function create(array $config, array $metadata = []): VideoTask
+    public function create(array $config, array $metadata = [], array $options = []): VideoTask
     {
         $data = ['config' => $config];
+        foreach (['title', 'category'] as $key) {
+            if (array_key_exists($key, $options)) $data[$key] = $options[$key];
+        }
         if (!empty($metadata)) {
             $data['metadata'] = $metadata;
         }
@@ -56,6 +59,7 @@ class VideoResource extends Resource
      */
     public function get(string $taskId): VideoTask
     {
+        $taskId = rawurlencode($taskId);
         $response = $this->client->get("/api/v1/video/{$taskId}");
 
         return VideoTask::fromArray($response);
@@ -69,6 +73,7 @@ class VideoResource extends Resource
      */
     public function delete(string $taskId): array
     {
+        $taskId = rawurlencode($taskId);
         return $this->client->delete("/api/v1/video/{$taskId}");
     }
 
@@ -83,6 +88,7 @@ class VideoResource extends Resource
      */
     public function render(string $taskId, array $options = []): RenderResult
     {
+        $taskId = rawurlencode($taskId);
         $response = $this->client->post("/api/v1/video/{$taskId}/render", $options);
 
         return RenderResult::fromArray($response);

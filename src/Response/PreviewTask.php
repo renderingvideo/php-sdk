@@ -21,6 +21,7 @@ class PreviewTask
         public readonly bool $success = true,
         public readonly ?string $message = null,
         public readonly ?string $note = null,
+        public readonly ?string $playerUrl = null,
     ) {}
 
     /**
@@ -32,7 +33,8 @@ class PreviewTask
             tempId: $data['tempId'] ?? null,
             taskId: $data['taskId'] ?? null,
             videoTaskId: $data['videoTaskId'] ?? null,
-            previewUrl: $data['previewUrl'] ?? null,
+            previewUrl: $data['previewUrl'] ?? $data['viewerUrl'] ?? $data['url'] ?? null,
+            playerUrl: $data['playerUrl'] ?? $data['url'] ?? null,
             viewerUrl: $data['viewerUrl'] ?? null,
             configUrl: $data['configUrl'] ?? null,
             expiresIn: $data['expiresIn'] ?? null,
@@ -52,7 +54,8 @@ class PreviewTask
             tempId: $data['tempId'] ?? null,
             taskId: $data['taskId'] ?? null,
             videoTaskId: $data['videoTaskId'] ?? null,
-            previewUrl: $data['previewUrl'] ?? null,
+            previewUrl: $data['previewUrl'] ?? $data['viewerUrl'] ?? $data['url'] ?? null,
+            playerUrl: $data['playerUrl'] ?? $data['url'] ?? null,
             viewerUrl: $data['viewerUrl'] ?? null,
             configUrl: $data['configUrl'] ?? null,
             converted: $data['converted'] ?? true,
@@ -71,6 +74,7 @@ class PreviewTask
             'taskId' => $this->taskId,
             'videoTaskId' => $this->videoTaskId,
             'previewUrl' => $this->previewUrl,
+            'playerUrl' => $this->playerUrl,
             'viewerUrl' => $this->viewerUrl,
             'configUrl' => $this->configUrl,
             'expiresIn' => $this->expiresIn,

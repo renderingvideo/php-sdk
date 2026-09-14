@@ -33,6 +33,7 @@ class PreviewResource extends Resource
      */
     public function get(string $tempId): array
     {
+        $tempId = rawurlencode($tempId);
         $response = $this->client->get("/api/v1/preview/{$tempId}");
 
         return $response['config'] ?? [];
@@ -46,6 +47,7 @@ class PreviewResource extends Resource
      */
     public function delete(string $tempId): array
     {
+        $tempId = rawurlencode($tempId);
         return $this->client->delete("/api/v1/preview/{$tempId}");
     }
 
@@ -59,6 +61,7 @@ class PreviewResource extends Resource
      */
     public function convert(string $tempId, array $options = []): PreviewTask
     {
+        $tempId = rawurlencode($tempId);
         $response = $this->client->post("/api/v1/preview/{$tempId}/convert", $options);
 
         return PreviewTask::fromConvertResponse($response);
@@ -76,6 +79,7 @@ class PreviewResource extends Resource
      */
     public function render(string $tempId, array $options = []): RenderResult
     {
+        $tempId = rawurlencode($tempId);
         $response = $this->client->post("/api/v1/preview/{$tempId}/render", $options);
 
         return RenderResult::fromArray($response);

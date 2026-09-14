@@ -11,6 +11,8 @@ use RenderingVideo\SDK\Exceptions\InsufficientCreditsException;
 use RenderingVideo\SDK\Exceptions\NotFoundException;
 use RenderingVideo\SDK\Exceptions\ValidationException;
 use RenderingVideo\SDK\Resources\VideoResource;
+use RenderingVideo\SDK\Resources\AgentResource;
+use RenderingVideo\SDK\Exceptions\AlreadyRenderingException;
 use RenderingVideo\SDK\Resources\FileResource;
 use RenderingVideo\SDK\Resources\PreviewResource;
 use RenderingVideo\SDK\Resources\CreditsResource;
@@ -33,6 +35,7 @@ class Client
      */
     private object $httpClient;
     private string $apiKey;
+    private ?AgentAuth $agentAuth;
     private string $baseUrl;
 
     private ?VideoResource $video = null;
@@ -49,11 +52,14 @@ class Client
      *   - timeout: Request timeout in seconds (default: 30)
      *   - http_client: Custom Guzzle HTTP client instance
      */
-    public function __construct(string $apiKey, array $options = [])
+    public function __construct(string $apiKey = '', array $options = [])
     {
-        $this->validateApiKey($apiKey);
+        $this->agentAuth = $options['agent_auth'] ?? null;
+        if ($this->agentAuth && $apiKey !== '') throw new \InvalidArgumentException('Provide apiKey or agent_auth, not both');
+        if (!$this->agentAuth) $this->validateApiKey($apiKey);
         $this->apiKey = $apiKey;
-        $this->baseUrl = $options['base_url'] ?? self::DEFAULT_BASE_URL;
+        $this->baseUrl = rtrim($options['base_url'] ?? $this->agentAuth?->getBaseUrl() ?? self::DEFAULT_BASE_URL, '/');
+        if ($this->agentAuth && $this->baseUrl !== $this->agentAuth->getBaseUrl()) throw new \InvalidArgumentException('Agent auth and client base_url must match');
 
         /** @phpstan-ignore-next-line */
         $this->httpClient = $options['http_client'] ?? new \GuzzleHttp\Client([
@@ -73,6 +79,7 @@ class Client
     public function __get(string $name): object
     {
         return match ($name) {
+            'agent' => $this->agentAuth ? new AgentResource($this) : throw new \InvalidArgumentException('Agent operations require AgentAuth'),
             'video' => $this->video ??= new VideoResource($this),
             'files' => $this->files ??= new FileResource($this),
             'preview' => $this->preview ??= new PreviewResource($this),
@@ -94,6 +101,11 @@ class Client
     /**
      * Get the base URL
      */
+    public function getCapabilities(): array
+    {
+        return $this->get('/api/v1/capabilities');
+    }
+
     public function getBaseUrl(): string
     {
         return $this->baseUrl;
@@ -146,15 +158,32 @@ class Client
      */
     public function request(string $method, string $uri, array $options = []): array
     {
+        $options['allow_redirects'] = false;
+        $options['http_errors'] = false;
+        if ($this->agentAuth) {
+            $query = $options['query'] ?? [];
+            $query = is_array($query) ? \GuzzleHttp\Psr7\Query::build($query) : $query;
+            $path = $uri . ($query !== '' ? (str_contains($uri, '?') ? '&' : '?') . $query : '');
+            $headers = $this->agentAuth->headers($method, $path, $this->httpClient);
+            unset($options['query']);
+            $uri = $this->baseUrl . $path;
+        } else {
+            $headers = ['Authorization' => 'Bearer ' . $this->apiKey];
+        }
+        $options['headers'] = array_merge($options['headers'] ?? [], $headers);
         try {
             $response = $this->httpClient->request($method, $uri, $options);
             $body = $response->getBody()->getContents();
             $data = json_decode($body, true);
 
-            if (json_last_error() !== JSON_ERROR_NONE) {
+            if (json_last_error() !== JSON_ERROR_NONE || !is_array($data)) {
                 throw new ApiException('Invalid JSON response: ' . json_last_error_msg());
             }
 
+            $status = method_exists($response, 'getStatusCode') ? $response->getStatusCode() : 200;
+            if ($status < 200 || $status >= 300 || ($data['success'] ?? true) === false) {
+                throw $this->apiError($data, $status);
+            }
             return $data;
         } catch (GuzzleException $e) {
             throw $this->convertException($e);
@@ -180,7 +209,7 @@ class Client
      */
     private function convertException(GuzzleException $e): ApiException
     {
-        $response = $e->getResponse();
+        $response = method_exists($e, 'getResponse') ? $e->getResponse() : null;
         $statusCode = $response?->getStatusCode() ?? 0;
 
         $errorData = [];
@@ -189,15 +218,20 @@ class Client
             $errorData = json_decode($body, true) ?? [];
         }
 
-        $errorCode = $errorData['code'] ?? 'UNKNOWN_ERROR';
-        $errorMessage = $errorData['error'] ?? $e->getMessage();
+        return $this->apiError(is_array($errorData) ? $errorData : [], $statusCode, $e->getMessage());
+    }
 
-        return match ($statusCode) {
-            400 => new ValidationException($errorMessage, $errorCode, $statusCode, $errorData['details'] ?? []),
-            401 => new AuthenticationException($errorMessage, $errorCode, $statusCode),
-            402 => new InsufficientCreditsException($errorMessage, $errorCode, $statusCode),
-            404 => new NotFoundException($errorMessage, $errorCode, $statusCode),
-            default => new ApiException($errorMessage, $errorCode, $statusCode),
+    private function apiError(array $data, int $status, string $fallback = 'API request failed'): ApiException
+    {
+        $code = $data['code'] ?? 'API_ERROR';
+        $message = $data['error'] ?? $fallback;
+        if ($code === 'ALREADY_RENDERING') return new AlreadyRenderingException($message, $code, $status);
+        return match ($status) {
+            400 => new ValidationException($message, $code, $status, $data['details'] ?? []),
+            401 => new AuthenticationException($message, $code, $status),
+            402 => new InsufficientCreditsException($message, $code, $status),
+            404 => new NotFoundException($message, $code, $status),
+            default => new ApiException($message, $code, $status, $data),
         };
     }
 }

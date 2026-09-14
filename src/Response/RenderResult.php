@@ -12,7 +12,7 @@ class RenderResult
     public function __construct(
         public readonly string $taskId,
         public readonly ?string $renderTaskId = null,
-        public readonly string $status,
+        public readonly string $status = 'rendering',
         public readonly ?string $quality = null,
         public readonly ?int $width = null,
         public readonly ?int $height = null,

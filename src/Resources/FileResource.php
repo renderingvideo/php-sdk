@@ -90,6 +90,7 @@ class FileResource extends Resource
      */
     public function delete(string $fileId): array
     {
+        $fileId = rawurlencode($fileId);
         return $this->client->delete("/api/v1/files/{$fileId}");
     }
 }
