@@ -10,7 +10,7 @@
         "json-to-video"
     ],
     "type": "library",
-    "version": "1.1.0",
+    "version": "1.1.1",
     "license": "MIT",
     "authors": [
         {
@@ -48,8 +48,5 @@
         "fix-style": "phpcbf src tests"
     },
     "minimum-stability": "stable",
-    "prefer-stable": true,
-    "suggest": {
-        "ext-sodium": "Required only for AgentAuth Ed25519 device proof"
-    }
+    "prefer-stable": true
 }

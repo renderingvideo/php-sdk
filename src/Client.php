@@ -11,7 +11,6 @@ use RenderingVideo\SDK\Exceptions\InsufficientCreditsException;
 use RenderingVideo\SDK\Exceptions\NotFoundException;
 use RenderingVideo\SDK\Exceptions\ValidationException;
 use RenderingVideo\SDK\Resources\VideoResource;
-use RenderingVideo\SDK\Resources\AgentResource;
 use RenderingVideo\SDK\Exceptions\AlreadyRenderingException;
 use RenderingVideo\SDK\Resources\FileResource;
 use RenderingVideo\SDK\Resources\PreviewResource;
@@ -35,7 +34,6 @@ class Client
      */
     private object $httpClient;
     private string $apiKey;
-    private ?AgentAuth $agentAuth;
     private string $baseUrl;
 
     private ?VideoResource $video = null;
@@ -54,12 +52,9 @@ class Client
      */
     public function __construct(string $apiKey = '', array $options = [])
     {
-        $this->agentAuth = $options['agent_auth'] ?? null;
-        if ($this->agentAuth && $apiKey !== '') throw new \InvalidArgumentException('Provide apiKey or agent_auth, not both');
-        if (!$this->agentAuth) $this->validateApiKey($apiKey);
+        $this->validateApiKey($apiKey);
         $this->apiKey = $apiKey;
-        $this->baseUrl = rtrim($options['base_url'] ?? $this->agentAuth?->getBaseUrl() ?? self::DEFAULT_BASE_URL, '/');
-        if ($this->agentAuth && $this->baseUrl !== $this->agentAuth->getBaseUrl()) throw new \InvalidArgumentException('Agent auth and client base_url must match');
+        $this->baseUrl = rtrim($options['base_url'] ?? self::DEFAULT_BASE_URL, '/');
 
         /** @phpstan-ignore-next-line */
         $this->httpClient = $options['http_client'] ?? new \GuzzleHttp\Client([
@@ -79,7 +74,6 @@ class Client
     public function __get(string $name): object
     {
         return match ($name) {
-            'agent' => $this->agentAuth ? new AgentResource($this) : throw new \InvalidArgumentException('Agent operations require AgentAuth'),
             'video' => $this->video ??= new VideoResource($this),
             'files' => $this->files ??= new FileResource($this),
             'preview' => $this->preview ??= new PreviewResource($this),
@@ -160,16 +154,7 @@ class Client
     {
         $options['allow_redirects'] = false;
         $options['http_errors'] = false;
-        if ($this->agentAuth) {
-            $query = $options['query'] ?? [];
-            $query = is_array($query) ? \GuzzleHttp\Psr7\Query::build($query) : $query;
-            $path = $uri . ($query !== '' ? (str_contains($uri, '?') ? '&' : '?') . $query : '');
-            $headers = $this->agentAuth->headers($method, $path, $this->httpClient);
-            unset($options['query']);
-            $uri = $this->baseUrl . $path;
-        } else {
-            $headers = ['Authorization' => 'Bearer ' . $this->apiKey];
-        }
+        $headers = ['Authorization' => 'Bearer ' . $this->apiKey];
         $options['headers'] = array_merge($options['headers'] ?? [], $headers);
         try {
             $response = $this->httpClient->request($method, $uri, $options);

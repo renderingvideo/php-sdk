@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.1.1] - 2026-09-14
+
+- Remove administrator Agent authentication, token exchange, device identity and context/audit clients from the public SDK. Their inclusion in 1.1.0 was a product-boundary error.
+- Keep user API-key authentication, capability discovery, schema enhancements, task categories and preview metadata.
+- Add regression checks rejecting administrator credentials in the public client.
+
 All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
